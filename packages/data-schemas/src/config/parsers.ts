@@ -552,13 +552,15 @@ const jsonTruncateFormat: winston.Logform.FormatWrap = winston.format(
  * Renames Winston's `message` to `msg` for JSON output so ingest stacks
  * (e.g. Elasticsearch) can avoid reserved `message` field collisions.
  */
-const jsonMessageAsMsgFormat: winston.Logform.FormatWrap = winston.format((info: winston.Logform.TransformableInfo) => {
-  const record = info as Record<string, unknown>;
-  if ('message' in record) {
-    record.msg = record.message;
-    delete record.message;
-  }
-  return info;
-});
+const jsonMessageAsMsgFormat: winston.Logform.FormatWrap = winston.format(
+  (info: winston.Logform.TransformableInfo) => {
+    const record = info as Record<string, unknown>;
+    if ('message' in record) {
+      record.msg = record.message;
+      delete record.message;
+    }
+    return info;
+  },
+);
 
 export { redactFormat, redactMessage, debugTraverse, jsonTruncateFormat, jsonMessageAsMsgFormat };

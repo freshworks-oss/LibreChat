@@ -56,11 +56,7 @@ function parseStatsDateQueryValue(raw: string | undefined): Date | undefined | '
       return 'invalid';
     }
     const local = new Date(y, monthIndex, day, hour, minute, second);
-    if (
-      local.getFullYear() !== y ||
-      local.getMonth() !== monthIndex ||
-      local.getDate() !== day
-    ) {
+    if (local.getFullYear() !== y || local.getMonth() !== monthIndex || local.getDate() !== day) {
       return 'invalid';
     }
     return local;
@@ -93,8 +89,7 @@ function createGetUsersStatsHandler(
       }
       if (endParsed === 'invalid') {
         return res.status(400).json({
-          error:
-            'Invalid endDate: use YYYY/MM/DD HH:mm:ss (e.g. 2026/04/16 23:59:59) or ISO 8601',
+          error: 'Invalid endDate: use YYYY/MM/DD HH:mm:ss (e.g. 2026/04/16 23:59:59) or ISO 8601',
         });
       }
 
