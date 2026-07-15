@@ -239,3 +239,21 @@ export type AdminUserSearchResult = {
   username?: string;
   avatarUrl?: string;
 };
+
+/** Per-user usage row returned by GET /api/admin/users/stats. */
+export type AdminUserStatsRow = {
+  userId: string;
+  name: string;
+  email: string;
+  conversationsCount: number;
+  messagesCount: number;
+};
+
+/** Response body for GET /api/admin/users/stats. */
+export type AdminUsersStatsResponse = {
+  stats: AdminUserStatsRow[];
+  filters: {
+    startDate?: string;
+    endDate?: string;
+  };
+};

@@ -6,7 +6,6 @@ const {
   entraIdPrincipalFeatureEnabled,
   getUserOwnedEntraGroups,
   getUserEntraGroups,
-  getEntraGroupDetailsBatch,
   getGroupMembers,
   getGroupOwners,
 } = require('~/server/services/GraphApiService');
@@ -482,15 +481,14 @@ const ensureGroupPrincipalExists = async function (principal, authContext = null
 };
 
 /**
- * Sync user's Entra ID group memberships with auto-creation of missing groups
- * Optimized approach:
+ * Sync user's Entra ID group memberships (add/remove `memberIds` on existing Group rows).
+ * Missing Azure groups are not auto-created (upstream steps 4–6 disabled; see comment in body).
+ * Flow:
  * 1. Get all group IDs user should be member of from Entra
- * 2. Try to add user to existing groups (fast, no Graph API calls)
- * 3. Query DB to identify which groups don't exist (indexed query, fast)
- * 4. For missing groups only, fetch details from Graph API in batches
- * 5. Upsert missing groups using upsertGroupByExternalId (race-safe)
- * 6. Add user to newly created/upserted groups via bulkUpdate
- * 7. Remove user from groups they're no longer member of
+ * 2. Add user to existing groups (fast, no Graph detail fetch for missing ids)
+ * 3. Detect Azure group ids not present in DB (for logging only)
+ * 4–6. (Disabled) Would fetch Graph details and upsert new Group documents
+ * 7. Remove user from Entra groups they're no longer member of
  *
  * @param {Object} user - User object with authentication context
  * @param {string} user.openidId - User's OpenID subject identifier
@@ -555,6 +553,11 @@ const syncUserEntraGroupMemberships = async (user, accessToken, session = null) 
 
     const missingGroupIds = allGroupIds.filter((id) => !existingGroupIds.has(id));
 
+    // Avoiding: automatic creation of new `Group` documents for every Entra/Azure group ID returned
+    // by Microsoft Graph that is not already in MongoDB. Default upstream behavior fetches group
+    // details from Graph and upserts those rows here; we only want users added to groups that
+    // already exist (Step 2). New groups must be created via admin / provisioning.
+    /*
     if (missingGroupIds.length > 0) {
       logger.info(
         `[PermissionService.syncUserEntraGroupMemberships] Found ${missingGroupIds.length} groups that don't exist, fetching details...`,
@@ -608,6 +611,17 @@ const syncUserEntraGroupMemberships = async (user, accessToken, session = null) 
           `[PermissionService.syncUserEntraGroupMemberships] Could not fetch details for ${missingGroupIds.length} missing groups`,
         );
       }
+    } else {
+      logger.debug(
+        `[PermissionService.syncUserEntraGroupMemberships] All ${allGroupIds.length} groups already exist in database`,
+      );
+    }
+    */
+
+    if (missingGroupIds.length > 0) {
+      logger.info(
+        `[PermissionService.syncUserEntraGroupMemberships] ${missingGroupIds.length} Azure group id(s) not present in DB; skipped creating Group documents (curated groups only).`,
+      );
     } else {
       logger.debug(
         `[PermissionService.syncUserEntraGroupMemberships] All ${allGroupIds.length} groups already exist in database`,

@@ -5,6 +5,7 @@ import { CallToolResultSchema, ErrorCode, McpError } from '@modelcontextprotocol
 import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import type { TokenMethods, IUser } from '@librechat/data-schemas';
 import type { OboTokenResolver, OboTrustChecker } from '~/mcp/oauth/obo';
+import type { IUserGroup } from './types';
 import type { GraphTokenResolver } from '~/utils/graph';
 import type { FlowStateManager } from '~/flow/manager';
 import type { MCPOAuthTokens } from './oauth';
@@ -28,6 +29,7 @@ import { MCPConnectionFactory } from './MCPConnectionFactory';
 import { preProcessGraphTokens } from '~/utils/graph';
 import { formatToolContent } from './parsers';
 import { MCPConnection } from './connection';
+import { enrichUserForMcpGroups } from './group';
 import { processMCPEnv } from '~/utils/env';
 
 function createOboToolCallErrorMessage(
@@ -77,7 +79,7 @@ export class MCPManager extends UserConnectionManager {
   public async getConnection(
     args: {
       serverName: string;
-      user?: IUser;
+      user?: IUser | IUserGroup;
       forceNew?: boolean;
       flowManager?: FlowStateManager<MCPOAuthTokens | null>;
       /** Pre-resolved config for config-source servers not in YAML/DB */
@@ -358,7 +360,7 @@ Please follow these instructions when using tools from the respective MCP server
     oboTokenResolver,
     oboTrustChecker,
   }: {
-    user?: IUser;
+    user?: IUser | IUserGroup;
     serverName: string;
     /** Pre-resolved config from tool creation context — avoids readThrough TTL and cross-tenant issues */
     serverConfig?: t.ParsedServerConfig;
@@ -432,8 +434,9 @@ Please follow these instructions when using tools from the respective MCP server
             graphTokenResolver,
             scopes: process.env.GRAPH_API_SCOPES,
           });
+      const mcpUser = await enrichUserForMcpGroups(user);
       const currentOptions = processMCPEnv({
-        user,
+        user: mcpUser,
         body: requestBody,
         dbSourced: isDbSourced,
         options: graphProcessedConfig,

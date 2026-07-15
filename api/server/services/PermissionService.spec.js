@@ -2140,8 +2140,9 @@ describe('syncUserEntraGroupMemberships - $pullAll on Group.memberIds', () => {
   });
 
   it('should handle mix of existing and missing groups correctly (regression test)', async () => {
-    // This is the critical bug fix: previously syncUserEntraGroups would remove user from existing groups
-    // when called with only missing groups. Now using upserts + bulkUpdate to avoid this issue.
+    // Regression: sync must not remove the user from existing groups when Graph also returns ids
+    // that are not in Mongo. Fork behavior: missing Entra ids do not create new Group documents
+    // (upstream auto-create block is disabled in PermissionService).
 
     const { getEntraGroupDetailsBatch } = require('~/server/services/GraphApiService');
 
@@ -2151,10 +2152,9 @@ describe('syncUserEntraGroupMemberships - $pullAll on Group.memberIds', () => {
       { name: 'Group B', source: 'entra', idOnTheSource: 'entra-group-b', memberIds: [] },
     ]);
 
-    // User is member of A, B, and C (but C doesn't exist yet)
+    // User is member of A, B, and C in Azure (C has no row in DB yet)
     getUserEntraGroups.mockResolvedValue(['entra-group-a', 'entra-group-b', 'entra-group-c']);
 
-    // Mock batch fetch to return details for missing group C
     getEntraGroupDetailsBatch.mockResolvedValue([
       {
         id: 'entra-group-c',
@@ -2166,18 +2166,15 @@ describe('syncUserEntraGroupMemberships - $pullAll on Group.memberIds', () => {
 
     await syncUserEntraGroupMemberships(user, 'fake-token');
 
-    // Verify ALL three groups now have the user as member
     const groupA = await Group.findOne({ idOnTheSource: 'entra-group-a' }).lean();
     const groupB = await Group.findOne({ idOnTheSource: 'entra-group-b' }).lean();
     const groupC = await Group.findOne({ idOnTheSource: 'entra-group-c' }).lean();
 
     expect(groupA.memberIds).toContain(userEntraId);
     expect(groupB.memberIds).toContain(userEntraId);
-    expect(groupC).toBeTruthy();
-    expect(groupC.memberIds).toContain(userEntraId);
-    expect(groupC.name).toBe('Group C');
+    expect(groupC).toBeNull();
+    expect(getEntraGroupDetailsBatch).not.toHaveBeenCalled();
 
-    // Reset mock
     getEntraGroupDetailsBatch.mockResolvedValue([]);
   });
 });

@@ -1250,6 +1250,46 @@ describe('processMCPEnv', () => {
     });
   });
 
+  it('should inject mandatory group headers for HTTP-based MCP options', () => {
+    const user = {
+      id: 'user-123',
+      groupId: 'group-a,group-b',
+      groupName: 'Team A,Team B',
+    } as IUser & { groupId: string; groupName: string };
+    const options: MCPOptions = {
+      type: 'streamable-http',
+      url: 'https://api.example.com',
+    };
+
+    const result = processMCPEnv({ options, user });
+
+    if (!isStreamableHTTPOptions(result)) {
+      throw new Error('Expected streamable-http options');
+    }
+    expect(result.headers?.['x-user-group-id']).toBe('group-a,group-b');
+    expect(result.headers?.['x-user-group-name']).toBe('Team A,Team B');
+  });
+
+  it('should not inject group headers for stdio MCP options', () => {
+    const user = {
+      id: 'user-123',
+      groupId: 'group-a',
+      groupName: 'Team A',
+    } as IUser & { groupId: string; groupName: string };
+    const options: MCPOptions = {
+      type: 'stdio',
+      command: 'mcp-server',
+      args: [],
+    };
+
+    const result = processMCPEnv({ options, user });
+
+    if (!isStdioOptions(result)) {
+      throw new Error('Expected stdio options');
+    }
+    expect((result as MCPOptions & { headers?: Record<string, string> }).headers).toBeUndefined();
+  });
+
   it('should not resolve env vars introduced via body placeholders in MCP headers', () => {
     const body = {
       conversationId: '${TEST_API_KEY}',

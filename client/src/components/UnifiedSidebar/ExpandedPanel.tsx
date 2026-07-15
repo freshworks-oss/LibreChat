@@ -13,6 +13,7 @@ import { clearMessagesCache, cn } from '~/utils';
 import store from '~/store';
 
 const AccountSettings = lazy(() => import('~/components/Nav/AccountSettings'));
+const AdminNavLink = lazy(() => import('~/components/Admin/AdminNavLink'));
 
 const NewChatButton = memo(function NewChatButton({
   setActive,
@@ -180,7 +181,10 @@ function ExpandedPanel({
         ))}
       </div>
 
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-1">
+        <Suspense fallback={null}>
+          <AdminNavLink />
+        </Suspense>
         <Suspense fallback={<Skeleton className="h-9 w-9 rounded-lg" />}>
           <AccountSettings collapsed />
         </Suspense>

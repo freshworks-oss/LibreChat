@@ -1,4 +1,5 @@
 import { Navigate, useParams } from 'react-router-dom';
+import { adminRoutes, isAdminPanelEnabled } from '~/admin-plugin';
 import DashboardRoute from './Layouts/Dashboard';
 
 function PromptsRedirect() {
@@ -15,6 +16,7 @@ const dashboardRoutes = {
       path: 'prompts/*',
       element: <PromptsRedirect />,
     },
+    ...(isAdminPanelEnabled ? [adminRoutes] : []),
     {
       path: '*',
       element: <Navigate to="/c/new" replace={true} />,

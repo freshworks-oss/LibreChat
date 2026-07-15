@@ -18,6 +18,7 @@ import { createPluginAuthMethods, type PluginAuthMethods } from './pluginAuth';
 /* Permissions */
 import { createAccessRoleMethods, type AccessRoleMethods } from './accessRole';
 import { createUserGroupMethods, type UserGroupMethods } from './userGroup';
+import { createUserStatsMethods, type UserStatsMethods } from './userStats';
 import { createAclEntryMethods, permissionBitSupersets, type AclEntryMethods } from './aclEntry';
 import { createSystemGrantMethods, type SystemGrantMethods } from './systemGrant';
 import {
@@ -112,6 +113,7 @@ export {
 export { AUDIT_SCHEMA_VERSION, MAX_AUDIT_EXPORT_ROWS, MAX_AUDIT_LOG_LIMIT, MAX_AUDIT_VERIFY_ROWS };
 
 export type AllMethods = UserMethods &
+  UserStatsMethods &
   SessionMethods &
   TokenMethods &
   RoleMethods &
@@ -239,6 +241,7 @@ export function createMethods(
 
   return {
     ...createUserMethods(mongoose),
+    ...createUserStatsMethods(mongoose),
     ...createSessionMethods(mongoose),
     ...createTokenMethods(mongoose),
     ...roleMethods,
@@ -283,6 +286,7 @@ export function createMethods(
 
 export type {
   UserMethods,
+  UserStatsMethods,
   SessionMethods,
   TokenMethods,
   RoleMethods,

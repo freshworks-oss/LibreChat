@@ -21,6 +21,7 @@ import {
 import { sanitizeUrlForLogging, isClientRejectionMessage, isOAuthServer } from './utils';
 import { PENDING_STALE_MS, normalizeExpiresAt } from '~/flow/manager';
 import { preProcessGraphTokens } from '~/utils/graph';
+import { enrichUserForMcpGroups } from './group';
 import { withTimeout } from '~/utils/promise';
 import { MCPConnection } from './connection';
 import { processMCPEnv } from '~/utils';
@@ -106,7 +107,10 @@ export class MCPConnectionFactory {
     basic: t.BasicConnectionOptions,
     oauth?: t.OAuthConnectionOptions | t.UserConnectionContext,
   ): Promise<MCPConnection> {
-    const factory = new this(await this.prepareBasicConnectionOptions(basic, oauth), oauth);
+    const enrichedOAuth = oauth?.user
+      ? { ...oauth, user: await enrichUserForMcpGroups(oauth.user) }
+      : oauth;
+    const factory = new this(await this.prepareBasicConnectionOptions(basic, oauth), enrichedOAuth);
     return factory.createConnection();
   }
 
@@ -129,11 +133,15 @@ export class MCPConnectionFactory {
     options?: Omit<t.OAuthConnectionOptions, 'returnOnOAuth'> | t.UserConnectionContext,
   ): Promise<ToolDiscoveryResult> {
     const preparedBasic = await this.prepareBasicConnectionOptions(basic, options);
+    const enrichedOptions = options?.user
+      ? { ...options, user: await enrichUserForMcpGroups(options.user) }
+      : options;
     if (options != null && 'useOAuth' in options) {
-      const factory = new this(preparedBasic, { ...options, returnOnOAuth: true });
+      const oauthOptions = enrichedOptions as Omit<t.OAuthConnectionOptions, 'returnOnOAuth'>;
+      const factory = new this(preparedBasic, { ...oauthOptions, returnOnOAuth: true });
       return factory.discoverToolsInternal();
     }
-    const factory = new this(preparedBasic, options);
+    const factory = new this(preparedBasic, enrichedOptions);
     return factory.discoverToolsInternal();
   }
 

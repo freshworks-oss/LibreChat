@@ -2,6 +2,7 @@ import { extractEnvVariable } from 'librechat-data-provider';
 import type { MCPOptions } from 'librechat-data-provider';
 import type { IUser } from '@librechat/data-schemas';
 import type { RequestBody } from '~/types';
+import { injectMandatoryGroupHeaders } from '~/mcp/headers';
 import { extractOpenIDTokenInfo, processOpenIDPlaceholders, isOpenIDTokenValid } from './oidc';
 
 /**
@@ -376,7 +377,12 @@ export function processMCPEnv(params: {
         isHeader: true, // Important: Enable header encoding
       });
     }
-    newObj.headers = processedHeaders;
+    newObj.headers = injectMandatoryGroupHeaders(processedHeaders, user as Partial<IUser>) ?? {};
+  } else if ('url' in newObj && newObj.url) {
+    const injectedHeaders = injectMandatoryGroupHeaders(undefined, user as Partial<IUser>);
+    if (injectedHeaders) {
+      (newObj as MCPOptions & { headers?: Record<string, string> }).headers = injectedHeaders;
+    }
   }
 
   // Process OAuth headers if they exist; sent on OAuth discovery/token requests
