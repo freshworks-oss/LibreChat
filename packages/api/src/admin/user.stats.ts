@@ -73,10 +73,12 @@ function parseStatsDateQueryValue(raw: string | undefined): Date | undefined | '
   return parsed;
 }
 
-function createGetUsersStatsHandler(deps: AdminUserStatsDeps) {
+function createGetUsersStatsHandler(
+  deps: AdminUserStatsDeps,
+): (req: ServerRequest, res: Response) => Promise<Response> {
   const { getAdminUsersStats } = deps;
 
-  return   async function getUsersStatsHandler(req: ServerRequest, res: Response) {
+  return async function getUsersStatsHandler(req: ServerRequest, res: Response) {
     try {
       const startRaw = firstQueryString(req.query.startDate);
       const endRaw = firstQueryString(req.query.endDate);
@@ -126,7 +128,9 @@ function createGetUsersStatsHandler(deps: AdminUserStatsDeps) {
   };
 }
 
-export function createAdminUserStatsHandlers(deps: AdminUserStatsDeps) {
+export function createAdminUserStatsHandlers(deps: AdminUserStatsDeps): {
+  getUsersStats: (req: ServerRequest, res: Response) => Promise<Response>;
+} {
   return {
     getUsersStats: createGetUsersStatsHandler(deps),
   };
