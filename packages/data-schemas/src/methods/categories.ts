@@ -1,8 +1,6 @@
 import logger from '~/config/winston';
 
-const options = [
-  { label: 'com_ui_dbaas', value: 'dbaas' },
-] as const;
+const options = [{ label: 'com_ui_dbaas', value: 'dbaas' }] as const;
 
 export type CategoryOption = { label: string; value: string };
 

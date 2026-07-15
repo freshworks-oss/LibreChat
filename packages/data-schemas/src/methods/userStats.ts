@@ -8,7 +8,9 @@ function hasResourceCreatedAtRange(range?: ResourceCreatedAtRange): range is Res
   return range != null && (range.$gte != null || range.$lte != null);
 }
 
-export function createUserStatsMethods(mongoose: typeof import('mongoose')) {
+export function createUserStatsMethods(mongoose: typeof import('mongoose')): {
+  getAdminUsersStats: (resourceCreatedAtRange?: ResourceCreatedAtRange) => Promise<AdminUserStatsRow[]>;
+} {
   /**
    * User stats: all users with conversation and message counts.
    * When `resourceCreatedAtRange` is set, counts only conversations/messages whose `createdAt` falls in range.
