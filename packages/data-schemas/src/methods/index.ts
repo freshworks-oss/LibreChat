@@ -1,10 +1,10 @@
+import type { RoleMethods, RoleDeps } from './role';
 import { createSessionMethods, DEFAULT_REFRESH_TOKEN_EXPIRY, type SessionMethods } from './session';
+import { createUserMethods, DEFAULT_SESSION_EXPIRY, type UserMethods } from './user';
+import { createFileMethods, type FileMethods, type FileOwnerScope } from './file';
 import { createTokenMethods, type TokenMethods } from './token';
 import { createRoleMethods, RoleConflictError } from './role';
-import type { RoleMethods, RoleDeps } from './role';
-import { createUserMethods, DEFAULT_SESSION_EXPIRY, type UserMethods } from './user';
 import { createKeyMethods, type KeyMethods } from './key';
-import { createFileMethods, type FileMethods } from './file';
 /* Memories */
 import { createMemoryMethods, type MemoryMethods } from './memory';
 /* Agent Categories */
@@ -21,6 +21,14 @@ import { createUserGroupMethods, type UserGroupMethods } from './userGroup';
 import { createUserStatsMethods, type UserStatsMethods } from './userStats';
 import { createAclEntryMethods, permissionBitSupersets, type AclEntryMethods } from './aclEntry';
 import { createSystemGrantMethods, type SystemGrantMethods } from './systemGrant';
+import {
+  createAuditLogMethods,
+  AUDIT_SCHEMA_VERSION,
+  MAX_AUDIT_EXPORT_ROWS,
+  MAX_AUDIT_LOG_LIMIT,
+  MAX_AUDIT_VERIFY_ROWS,
+  type AuditLogMethods,
+} from './auditLog';
 import { createShareMethods, type ShareMethods } from './share';
 /* Tier 1 — Simple CRUD */
 import { createActionMethods, type ActionMethods } from './action';
@@ -33,6 +41,17 @@ import { createPresetMethods, type PresetMethods } from './preset';
 import { createConversationTagMethods, type ConversationTagMethods } from './conversationTag';
 import { createMessageMethods, type MessageMethods } from './message';
 import { createConversationMethods, type ConversationMethods } from './conversation';
+import { createChatProjectMethods, type ChatProjectMethods } from './chatProject';
+export type {
+  AssignConversationToProjectResult,
+  ChatProjectSortBy,
+  ChatProjectSortDirection,
+  CreateChatProjectInput,
+  DeleteChatProjectResult,
+  ListChatProjectsOptions,
+  ListChatProjectsResult,
+  UpdateChatProjectInput,
+} from './chatProject';
 /* Tier 3 — Complex (heavier injection) */
 import {
   createTxMethods,
@@ -48,6 +67,14 @@ import { createSpendTokensMethods, type SpendTokensMethods } from './spendTokens
 import { createPromptMethods, type PromptMethods, type PromptDeps } from './prompt';
 import {
   createSkillMethods,
+  partitionIssues,
+  validateSkillName,
+  validateSkillBody,
+  validateRelativePath,
+  validateSkillFrontmatter,
+  validateSkillDescription,
+  deriveStructuredFrontmatterFields,
+  inferSkillFileCategory,
   type SkillMethods,
   type SkillDeps,
   type CreateSkillInput,
@@ -59,14 +86,31 @@ import {
   type UpdateSkillResult,
   type ValidationIssue,
 } from './skill';
+import { createSkillSyncMethods, type SkillSyncMethods } from './skillSync';
+import type {
+  SkillSyncStatusInput,
+  SkillSyncCredentialSummary,
+  UpsertSkillSyncCredentialInput,
+} from './skillSync';
 /* Tier 5 — Agent */
 import { createAgentMethods, type AgentMethods, type AgentDeps } from './agent';
 /* Config */
 import { createConfigMethods, type ConfigMethods } from './config';
 
 export { RoleConflictError, DEFAULT_REFRESH_TOKEN_EXPIRY, DEFAULT_SESSION_EXPIRY };
-export { tokenValues, cacheTokenValues, premiumTokenValues, defaultRate };
+export { tokenValues, cacheTokenValues, premiumTokenValues, defaultRate, createTxMethods };
 export { permissionBitSupersets };
+export {
+  partitionIssues,
+  validateSkillName,
+  validateSkillBody,
+  validateRelativePath,
+  validateSkillFrontmatter,
+  validateSkillDescription,
+  deriveStructuredFrontmatterFields,
+  inferSkillFileCategory,
+};
+export { AUDIT_SCHEMA_VERSION, MAX_AUDIT_EXPORT_ROWS, MAX_AUDIT_LOG_LIMIT, MAX_AUDIT_VERIFY_ROWS };
 
 export type AllMethods = UserMethods &
   UserStatsMethods &
@@ -82,6 +126,7 @@ export type AllMethods = UserMethods &
   UserGroupMethods &
   AclEntryMethods &
   SystemGrantMethods &
+  AuditLogMethods &
   ShareMethods &
   AccessRoleMethods &
   PluginAuthMethods &
@@ -94,11 +139,13 @@ export type AllMethods = UserMethods &
   ConversationTagMethods &
   MessageMethods &
   ConversationMethods &
+  ChatProjectMethods &
   TxMethods &
   TransactionMethods &
   SpendTokensMethods &
   PromptMethods &
   SkillMethods &
+  SkillSyncMethods &
   AgentMethods &
   ConfigMethods;
 
@@ -208,6 +255,7 @@ export function createMethods(
     ...createUserGroupMethods(mongoose),
     ...aclEntryMethods,
     ...systemGrantMethods,
+    ...createAuditLogMethods(mongoose),
     ...createShareMethods(mongoose),
     ...createPluginAuthMethods(mongoose),
     /* Tier 1 */
@@ -221,12 +269,14 @@ export function createMethods(
     ...createConversationTagMethods(mongoose),
     ...messageMethods,
     ...conversationMethods,
+    ...createChatProjectMethods(mongoose),
     /* Tier 3 */
     ...txMethods,
     ...transactionMethods,
     ...spendTokensMethods,
     ...promptMethods,
     ...skillMethods,
+    ...createSkillSyncMethods(mongoose),
     /* Tier 5 */
     ...agentMethods,
     /* Config */
@@ -242,6 +292,7 @@ export type {
   RoleMethods,
   KeyMethods,
   FileMethods,
+  FileOwnerScope,
   MemoryMethods,
   AgentCategoryMethods,
   AgentApiKeyMethods,
@@ -249,6 +300,7 @@ export type {
   UserGroupMethods,
   AclEntryMethods,
   SystemGrantMethods,
+  AuditLogMethods,
   ShareMethods,
   AccessRoleMethods,
   PluginAuthMethods,
@@ -261,6 +313,7 @@ export type {
   ConversationTagMethods,
   MessageMethods,
   ConversationMethods,
+  ChatProjectMethods,
   TxMethods,
   TransactionMethods,
   SpendTokensMethods,
@@ -275,6 +328,10 @@ export type {
   ListSkillsByAccessResult,
   UpdateSkillResult,
   ValidationIssue,
+  SkillSyncStatusInput,
+  SkillSyncCredentialSummary,
+  UpsertSkillSyncCredentialInput,
+  SkillSyncMethods,
   AgentMethods,
   ConfigMethods,
 };

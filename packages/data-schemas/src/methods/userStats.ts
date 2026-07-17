@@ -4,11 +4,17 @@ import type { IUser } from '~/types';
 
 type ResourceCreatedAtRange = { $gte?: Date; $lte?: Date };
 
-function hasResourceCreatedAtRange(range?: ResourceCreatedAtRange): range is ResourceCreatedAtRange {
+function hasResourceCreatedAtRange(
+  range?: ResourceCreatedAtRange,
+): range is ResourceCreatedAtRange {
   return range != null && (range.$gte != null || range.$lte != null);
 }
 
-export function createUserStatsMethods(mongoose: typeof import('mongoose')) {
+export function createUserStatsMethods(mongoose: typeof import('mongoose')): {
+  getAdminUsersStats: (
+    resourceCreatedAtRange?: ResourceCreatedAtRange,
+  ) => Promise<AdminUserStatsRow[]>;
+} {
   /**
    * User stats: all users with conversation and message counts.
    * When `resourceCreatedAtRange` is set, counts only conversations/messages whose `createdAt` falls in range.

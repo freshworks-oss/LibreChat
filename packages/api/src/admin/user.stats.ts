@@ -56,11 +56,7 @@ function parseStatsDateQueryValue(raw: string | undefined): Date | undefined | '
       return 'invalid';
     }
     const local = new Date(y, monthIndex, day, hour, minute, second);
-    if (
-      local.getFullYear() !== y ||
-      local.getMonth() !== monthIndex ||
-      local.getDate() !== day
-    ) {
+    if (local.getFullYear() !== y || local.getMonth() !== monthIndex || local.getDate() !== day) {
       return 'invalid';
     }
     return local;
@@ -73,10 +69,12 @@ function parseStatsDateQueryValue(raw: string | undefined): Date | undefined | '
   return parsed;
 }
 
-function createGetUsersStatsHandler(deps: AdminUserStatsDeps) {
+function createGetUsersStatsHandler(
+  deps: AdminUserStatsDeps,
+): (req: ServerRequest, res: Response) => Promise<Response> {
   const { getAdminUsersStats } = deps;
 
-  return   async function getUsersStatsHandler(req: ServerRequest, res: Response) {
+  return async function getUsersStatsHandler(req: ServerRequest, res: Response) {
     try {
       const startRaw = firstQueryString(req.query.startDate);
       const endRaw = firstQueryString(req.query.endDate);
@@ -91,8 +89,7 @@ function createGetUsersStatsHandler(deps: AdminUserStatsDeps) {
       }
       if (endParsed === 'invalid') {
         return res.status(400).json({
-          error:
-            'Invalid endDate: use YYYY/MM/DD HH:mm:ss (e.g. 2026/04/16 23:59:59) or ISO 8601',
+          error: 'Invalid endDate: use YYYY/MM/DD HH:mm:ss (e.g. 2026/04/16 23:59:59) or ISO 8601',
         });
       }
 
@@ -126,7 +123,9 @@ function createGetUsersStatsHandler(deps: AdminUserStatsDeps) {
   };
 }
 
-export function createAdminUserStatsHandlers(deps: AdminUserStatsDeps) {
+export function createAdminUserStatsHandlers(deps: AdminUserStatsDeps): {
+  getUsersStats: (req: ServerRequest, res: Response) => Promise<Response>;
+} {
   return {
     getUsersStats: createGetUsersStatsHandler(deps),
   };

@@ -1,12 +1,12 @@
 import logger from '~/config/winston';
 
-const options = [
-  { label: 'com_ui_dbaas', value: 'dbaas' },
-] as const;
+const options = [{ label: 'com_ui_dbaas', value: 'dbaas' }] as const;
 
 export type CategoryOption = { label: string; value: string };
 
-export function createCategoriesMethods(_mongoose: typeof import('mongoose')) {
+export function createCategoriesMethods(_mongoose: typeof import('mongoose')): {
+  getCategories: () => Promise<CategoryOption[]>;
+} {
   /**
    * Retrieves the categories.
    */
