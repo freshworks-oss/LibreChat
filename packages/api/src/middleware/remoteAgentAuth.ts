@@ -116,6 +116,25 @@ function hasRequiredScopes(requiredScope: string | undefined, payload: JwtPayloa
   return requiredScopes.every((scope) => tokenScopes.includes(scope));
 }
 
+async function resolveUserByEmailHeader(
+  req: Request,
+  findUser: UserMethods['findUser'],
+): Promise<IUser | null> {
+  const USER_EMAIL_HEADER = 'x-user-email';
+  const header = req.headers[USER_EMAIL_HEADER];
+  const email = Array.isArray(header) ? header[0] : header;
+  if (!email) return null;
+
+  const user = await findUser({ email });
+  if (!user) {
+    logger.warn(`[remoteAgentAuth] No user found for ${USER_EMAIL_HEADER} header`);
+    return null;
+  }
+
+  user.id = String(user._id);
+  return user;
+}
+
 function getJwksCacheOptions(): JwksCacheOptions {
   return {
     enabled: process.env.OPENID_JWKS_URL_CACHE_ENABLED
@@ -686,7 +705,8 @@ export function createRemoteAgentAuth({
 
       await updateResolvedUser(userResolution, updateUser);
 
-      req.user = userResolution.user;
+      const emailHeaderUser = await resolveUserByEmailHeader(req, findUser);
+      req.user = emailHeaderUser ?? userResolution.user;
       return next();
     } catch (err) {
       logger.error('[remoteAgentAuth] Unexpected error', err);
