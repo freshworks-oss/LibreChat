@@ -24,46 +24,49 @@ export const ADMIN_QUERY_KEYS = {
 
 /* ── Sidebar tab definitions ────────────────────────────────────────── */
 
+/** Absolute app paths — relative links break under nested `<Routes>` (path stacking + redirect loop). */
+export const ADMIN_BASE_PATH = '/d/admin';
+
 export const ADMIN_TABS: AdminTab[] = [
   {
     id: 'users',
     label: 'Users',
-    path: 'users',
+    path: `${ADMIN_BASE_PATH}/users`,
     icon: Users,
     requiredCapability: 'read:users',
   },
   {
     id: 'stats',
     label: 'Stats',
-    path: 'stats',
+    path: `${ADMIN_BASE_PATH}/stats`,
     icon: BarChart2,
     requiredCapability: 'read:users',
   },
   {
     id: 'groups',
     label: 'Groups',
-    path: 'groups',
+    path: `${ADMIN_BASE_PATH}/groups`,
     icon: Group,
     requiredCapability: 'read:groups',
   },
   {
     id: 'roles',
     label: 'Roles',
-    path: 'roles',
+    path: `${ADMIN_BASE_PATH}/roles`,
     icon: ShieldCheck,
     requiredCapability: 'read:roles',
   },
   {
     id: 'config',
     label: 'Config',
-    path: 'config',
+    path: `${ADMIN_BASE_PATH}/config`,
     icon: Settings,
     requiredCapability: 'read:configs',
   },
   {
     id: 'grants',
     label: 'Grants',
-    path: 'grants',
+    path: `${ADMIN_BASE_PATH}/grants`,
     icon: KeyRound,
     requiredCapability: 'access:admin',
   },

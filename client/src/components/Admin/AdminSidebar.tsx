@@ -26,7 +26,7 @@ function SidebarTab({ tab }: { tab: (typeof ADMIN_TABS)[number] }) {
   return (
     <NavLink
       to={tab.path}
-      end={false}
+      end
       className={({ isActive }) =>
         `flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
           isActive

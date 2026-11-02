@@ -9,6 +9,7 @@ import GroupsPanel from './panels/GroupsPanel';
 import RolesPanel from './panels/RolesPanel';
 import ConfigOverridesPanel from './panels/ConfigOverridesPanel';
 import GrantsPanel from './panels/GrantsPanel';
+import { ADMIN_BASE_PATH } from './constants';
 
 const TAB_LABEL_KEYS: Record<string, string> = {
   users: 'com_ui_admin_tab_users',
@@ -55,7 +56,8 @@ export default function AdminLayout() {
     );
   }
 
-  const activeTab = location.pathname.split('/').pop() || 'users';
+  const pathAfterAdmin = location.pathname.split('/admin/')[1] ?? '';
+  const activeTab = pathAfterAdmin.split('/')[0] || 'users';
   const tabKey = TAB_LABEL_KEYS[activeTab];
   const activeLabel = tabKey ? localize(tabKey) : localize('com_ui_admin');
 
@@ -79,14 +81,14 @@ export default function AdminLayout() {
         </header>
         <main className="flex-1 overflow-y-auto p-6">
           <Routes>
-            <Route index element={<Navigate to="users" replace />} />
+            <Route index element={<Navigate to={`${ADMIN_BASE_PATH}/users`} replace />} />
             <Route path="users" element={<UsersPanel />} />
             <Route path="stats" element={<StatsPanel />} />
             <Route path="groups" element={<GroupsPanel />} />
             <Route path="roles" element={<RolesPanel />} />
             <Route path="config" element={<ConfigOverridesPanel />} />
             <Route path="grants" element={<GrantsPanel />} />
-            <Route path="*" element={<Navigate to="users" replace />} />
+            <Route path="*" element={<Navigate to={`${ADMIN_BASE_PATH}/users`} replace />} />
           </Routes>
         </main>
       </div>
